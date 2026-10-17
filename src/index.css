@@ -1,0 +1,85 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens — Love Recipes (minimalista)
+ * Base branca; o rosa do briefing (#FF6B9D) aparece só como acento.
+ */
+@theme {
+  --font-sans: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Playfair Display', Georgia, serif;
+
+  --color-blush-50: #fff0f6;
+  --color-blush-100: #ffd6e7;
+  --color-blush-300: #ff99b8;
+  --color-blush-500: #ff6b9d;
+  --color-blush-600: #f04f86;
+  --color-cocoa: #4a2c2a;
+  --color-cocoa-muted: #8a6461;
+  --color-line: #f3e9ed;
+
+  --shadow-soft: 0 4px 16px rgb(74 44 42 / 0.06);
+
+  --animate-shimmer: shimmer 1.4s ease-in-out infinite;
+  --animate-marquee: marquee 50s linear infinite;
+
+  /* A faixa tem o conteúdo duplicado: andar metade dela fecha o loop sem emenda. */
+  @keyframes marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  @keyframes shimmer {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(100%);
+    }
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-white font-sans text-cocoa antialiased;
+  }
+
+  ::selection {
+    @apply bg-blush-100 text-cocoa;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-blush-500;
+  }
+}
+
+@layer components {
+  /* Skeleton com brilho estilo YouTube */
+  .skeleton {
+    @apply relative overflow-hidden rounded-lg bg-blush-50;
+  }
+
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0 animate-shimmer;
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.8), transparent);
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+  }
+
+  .animate-marquee {
+    animation: none;
+  }
+}
