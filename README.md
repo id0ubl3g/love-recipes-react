@@ -53,6 +53,7 @@ It is a recipe organizer developed with React, Vite and TypeScript, with a minim
 - Skeleton loaders with shimmer effect and smooth page transitions
 - Cupcake character avatar with a flavor chosen per account
 - Usage guide in the help popup
+- Home screen icons and web manifest to add the app to the phone's home screen
 
 ## Project Structure
 
@@ -62,7 +63,11 @@ It is a recipe organizer developed with React, Vite and TypeScript, with a minim
   │   ├── home.png
   │   └── love-recipes-logo.png
   ├── public/
-  │   └── favicon.svg
+  │   ├── apple-touch-icon.png
+  │   ├── favicon.svg
+  │   ├── icon-192.png
+  │   ├── icon-512.png
+  │   └── manifest.webmanifest
   ├── src/
   │   ├── components/
   │   │   ├── auth/
@@ -132,7 +137,8 @@ It is a recipe organizer developed with React, Vite and TypeScript, with a minim
   │   └── migrations/
   │       ├── 20261017120000_init.sql
   │       ├── 20261017140000_signup_email_validation.sql
-  │       └── 20261017150000_content_limits.sql
+  │       ├── 20261017150000_content_limits.sql
+  │       └── 20261017160000_private_recipe_images.sql
   ├── .env.example
   ├── .gitignore
   ├── .oxlintrc.json
