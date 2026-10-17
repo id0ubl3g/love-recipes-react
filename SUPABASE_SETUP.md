@@ -11,6 +11,7 @@ In **SQL Editor**, run the files in [`supabase/migrations/`](supabase/migrations
 | `20261017120000_init.sql` | `recipes`, `categories` and `profiles` tables with RLS (each user accesses only their own rows) and the `recipe-images` bucket |
 | `20261017140000_signup_email_validation.sql` | Blocked email domains list and the `hook_validate_signup` function |
 | `20261017150000_content_limits.sql` | Limits for ingredients, steps and categories |
+| `20261017160000_private_recipe_images.sql` | Makes the `recipe-images` bucket private, so each user can read only their own photos |
 
 Each file runs once. Running it again fails with "already exists" errors.
 

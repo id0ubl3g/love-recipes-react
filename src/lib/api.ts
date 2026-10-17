@@ -5,13 +5,13 @@ import { IMAGES_BUCKET, supabase } from './supabase'
 
 // ─── Conversão banco ⇄ app ───────────────────────────────────────────────────
 
-function fromRow(row: RecipeRow): Recipe {
+function fromRow(row: RecipeRow, image: string | undefined): Recipe {
   return {
     id: row.id,
     title: row.title,
     description: row.description,
     category: row.category,
-    image: row.image_url ?? undefined,
+    image,
     times: { prep: row.prep_minutes, oven: row.oven_minutes, fridge: row.fridge_minutes, rest: row.rest_minutes },
     servings: row.servings,
     // No banco é texto com CHECK ('facil' | 'medio' | 'dificil'); o tipo gerado só sabe que é string.
@@ -43,21 +43,40 @@ function toRow(input: RecipeInput) {
 
 // ─── Fotos ───────────────────────────────────────────────────────────────────
 
-/** Fotos novas chegam do formulário como data URL; sobem para o Storage e viram URL pública. */
+/** URLs assinadas das fotos valem por um dia; ao recarregar as receitas, saem novas. */
+const SIGNED_URL_SECONDS = 60 * 60 * 24
+
+const STORAGE_URL = new RegExp(`/storage/v1/object/(?:sign|public)/${IMAGES_BUCKET}/([^?]+)`)
+
+/** Fotos novas chegam do formulário como data URL e sobem para o Storage. No banco fica só o caminho no bucket. */
 async function persistImage(userId: string, image: string | undefined) {
-  if (!image?.startsWith('data:')) return image
+  if (!image?.startsWith('data:')) return storagePath(image) ?? undefined
   const blob = await (await fetch(image)).blob()
   const path = `${userId}/${crypto.randomUUID()}.jpg`
   const { error } = await supabase.storage.from(IMAGES_BUCKET).upload(path, blob, { contentType: 'image/jpeg' })
   if (error) throw error
-  return supabase.storage.from(IMAGES_BUCKET).getPublicUrl(path).data.publicUrl
+  return path
 }
 
-/** Caminho no bucket a partir da URL pública — só para fotos enviadas pelo usuário. */
-function storagePath(url: string | undefined) {
-  const marker = `/storage/v1/object/public/${IMAGES_BUCKET}/`
-  const index = url?.indexOf(marker) ?? -1
-  return url && index >= 0 ? decodeURIComponent(url.slice(index + marker.length)) : null
+/** Caminho no bucket a partir da URL da foto (assinada, ou pública da época em que o bucket era aberto). */
+function storagePath(image: string | undefined) {
+  if (!image || image.startsWith('data:')) return null
+  const match = image.match(STORAGE_URL)
+  if (match) return decodeURIComponent(match[1])
+  // Sem "://" já é o caminho: a foto não pôde ser assinada e ficou como estava no banco.
+  return image.includes('://') ? null : image
+}
+
+/** O bucket é privado: troca o caminho de cada foto por uma URL assinada antes de entregar ao app. */
+async function fromRows(rows: RecipeRow[]) {
+  const paths = rows.flatMap((row) => (row.image_url ? [row.image_url] : []))
+  const urls = new Map<string, string>()
+  if (paths.length > 0) {
+    const { data } = await supabase.storage.from(IMAGES_BUCKET).createSignedUrls(paths, SIGNED_URL_SECONDS)
+    // Se a assinatura falhar, as receitas aparecem com o placeholder no lugar da foto.
+    for (const item of data ?? []) if (item.path && item.signedUrl) urls.set(item.path, item.signedUrl)
+  }
+  return rows.map((row) => fromRow(row, row.image_url ? (urls.get(row.image_url) ?? row.image_url) : undefined))
 }
 
 // ─── Receitas ────────────────────────────────────────────────────────────────
@@ -65,7 +84,7 @@ function storagePath(url: string | undefined) {
 export async function fetchRecipes() {
   const { data, error } = await supabase.from('recipes').select('*').order('created_at', { ascending: false })
   if (error) throw error
-  return data.map(fromRow)
+  return fromRows(data)
 }
 
 export async function createRecipe(userId: string, input: RecipeInput) {
@@ -76,7 +95,8 @@ export async function createRecipe(userId: string, input: RecipeInput) {
     .select()
     .single()
   if (error) throw error
-  return fromRow(data)
+  const [recipe] = await fromRows([data])
+  return recipe
 }
 
 export async function updateRecipe(userId: string, id: string, input: RecipeInput) {
@@ -88,7 +108,8 @@ export async function updateRecipe(userId: string, id: string, input: RecipeInpu
     .select()
     .single()
   if (error) throw error
-  return fromRow(data)
+  const [recipe] = await fromRows([data])
+  return recipe
 }
 
 export async function deleteRecipe(recipe: Recipe) {

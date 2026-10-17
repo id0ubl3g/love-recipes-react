@@ -237,7 +237,7 @@ Without a logged-in user, every route shows the login and register screen. The p
 ## How Data Is Protected
 
 1. Every table has Row Level Security (RLS): each user reads and changes only their own recipes and categories.
-2. Photos go to the `recipe-images` bucket, where each user can write only in their own folder. The bucket accepts JPG, PNG and WEBP up to 2 MB, and the app resizes photos to 1200 px before uploading.
+2. Photos go to the private `recipe-images` bucket, where each user can read and write only in their own folder. The app shows them through signed URLs that expire after one day. The bucket accepts JPG, PNG and WEBP up to 2 MB, and the app resizes photos to 1200 px before uploading.
 3. The **Before User Created** hook runs inside Supabase Auth before each signup and rejects invalid emails, disposable domains and reserved domains, even for requests that skip the app.
 4. Password rules are enforced by Supabase Auth and mirrored in the app as a live checklist.
 
