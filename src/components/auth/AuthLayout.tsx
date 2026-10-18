@@ -36,6 +36,9 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         >
           {children}
         </motion.div>
+        <footer className="text-center text-xs text-cocoa-muted">
+          © 2026 Love Recipes. Todos os direitos reservados.
+        </footer>
       </main>
     </div>
   )

@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Toaster } from 'sonner'
+import { Footer } from './components/layout/Footer'
 import { Header } from './components/layout/Header'
 import { Splash } from './components/layout/Splash'
 import { RecipeModal } from './components/recipe/RecipeModal'
@@ -88,7 +89,7 @@ function AppShell() {
     <>
       <div className="flex min-h-dvh flex-col">
         <Header route={page} />
-        <main className="flex-1 pb-24 md:pb-16">
+        <main className="flex-1 pb-16">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={page}
@@ -104,6 +105,8 @@ function AppShell() {
           </AnimatePresence>
         </main>
       </div>
+      {/* Fora do bloco de altura mínima da tela: só aparece ao rolar. */}
+      <Footer />
 
       <AnimatePresence>
         {recipeId !== null && <RecipeModal key={recipeId} id={recipeId} onClose={closeRecipe} />}
