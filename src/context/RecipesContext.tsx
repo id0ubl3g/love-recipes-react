@@ -67,11 +67,13 @@ export function RecipesProvider({ children }: { children: ReactNode }) {
   const updateRecipe = useCallback(
     async (id: string, input: RecipeInput) => {
       if (!userId) throw new Error('Sem sessão')
-      const recipe = await api.updateRecipe(userId, id, input)
+      const previous = recipes.find((r) => r.id === id)
+      if (!previous) throw new Error('Receita não encontrada')
+      const recipe = await api.updateRecipe(userId, previous, input)
       setRecipes((prev) => prev.map((r) => (r.id === id ? recipe : r)))
       return recipe
     },
-    [userId],
+    [userId, recipes],
   )
 
   const removeRecipe = useCallback(

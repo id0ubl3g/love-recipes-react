@@ -99,17 +99,34 @@ export async function createRecipe(userId: string, input: RecipeInput) {
   return recipe
 }
 
-export async function updateRecipe(userId: string, id: string, input: RecipeInput) {
+export async function updateRecipe(userId: string, previous: Recipe, input: RecipeInput) {
   const image = await persistImage(userId, input.image)
+  const oldPath = storagePath(previous.image)
   const { data, error } = await supabase
     .from('recipes')
     .update(toRow({ ...input, image }))
-    .eq('id', id)
+    .eq('id', previous.id)
     .select()
     .single()
-  if (error) throw error
+  if (error) {
+    // A foto nova já subiu, mas a receita não mudou: ela ficaria sem dono no bucket.
+    if (image && image !== oldPath) await supabase.storage.from(IMAGES_BUCKET).remove([image])
+    throw error
+  }
+  // Foto trocada ou removida: a antiga sai do bucket, também em "melhor esforço".
+  if (oldPath && oldPath !== image) await supabase.storage.from(IMAGES_BUCKET).remove([oldPath])
   const [recipe] = await fromRows([data])
   return recipe
+}
+
+/** Erro amigável para quando criar ou editar uma receita falha. */
+export function recipeSaveError(error: unknown) {
+  console.error(error)
+  // 23514: o banco recusou por passar de algum limite (ver src/lib/limits.ts).
+  if ((error as { code?: string } | null)?.code === '23514') {
+    return new Error('A receita passou de algum limite de tamanho. Revise os ingredientes e o modo de preparo.')
+  }
+  return new Error('Não foi possível salvar a receita. Verifique a conexão e tente de novo.')
 }
 
 export async function deleteRecipe(recipe: Recipe) {

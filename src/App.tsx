@@ -9,14 +9,18 @@ import { AuthProvider } from './context/AuthContext'
 import { CategoriesProvider } from './context/CategoriesContext'
 import { RecipesProvider } from './context/RecipesContext'
 import { useAuth } from './hooks/useAuth'
-import { recipeIdFromRoute, useHashRoute, type Route } from './hooks/useHashRoute'
+import { editIdFromRoute, recipeIdFromRoute, useHashRoute, type Route } from './hooks/useHashRoute'
 import { AuthPage } from './pages/AuthPage'
+import { EditRecipe } from './pages/EditRecipe'
 import { Home } from './pages/Home'
 import { NewRecipe } from './pages/NewRecipe'
 import { Recipes } from './pages/Recipes'
 import { ResetPassword } from './pages/ResetPassword'
 
-type Page = '/' | '/receitas' | '/nova'
+type Page = '/' | '/receitas' | '/nova' | `/receita/${string}/editar`
+
+/** Páginas que podem ficar por trás do popup de receita. */
+type BackgroundPage = '/' | '/receitas' | '/nova'
 
 export default function App() {
   return (
@@ -58,14 +62,16 @@ function Gate() {
 function AppShell() {
   const route = useHashRoute()
   const recipeId = recipeIdFromRoute(route)
+  const editId = editIdFromRoute(route)
 
   // Com o popup aberto, a página de onde ele saiu continua por trás.
   // Num link direto para a receita, o fundo é a tela de Receitas.
-  const [backgroundPage, setBackgroundPage] = useState<Page>('/receitas')
+  // A edição não vira fundo: ao salvar, o popup volta por cima da página de antes.
+  const [backgroundPage, setBackgroundPage] = useState<BackgroundPage>('/receitas')
   const page: Page = recipeId !== null ? backgroundPage : (route as Page)
   useEffect(() => {
-    if (recipeId === null) setBackgroundPage(route as Page)
-  }, [route, recipeId])
+    if (recipeId === null && editId === null) setBackgroundPage(route as BackgroundPage)
+  }, [route, recipeId, editId])
 
   // Se o popup foi aberto de dentro do app, fechar = voltar no histórico (a página mantém a rolagem).
   // Se veio de um link direto, não há para onde voltar: troca a URL pela página de fundo.
@@ -101,6 +107,7 @@ function AppShell() {
               {page === '/' && <Home />}
               {page === '/receitas' && <Recipes />}
               {page === '/nova' && <NewRecipe />}
+              {editId !== null && <EditRecipe id={editId} />}
             </motion.div>
           </AnimatePresence>
         </main>

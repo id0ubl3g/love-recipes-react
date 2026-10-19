@@ -7,6 +7,7 @@ import {
   Hourglass,
   Maximize2,
   Minimize2,
+  Pencil,
   Snowflake,
   Timer,
   Users,
@@ -17,6 +18,7 @@ import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { DIFFICULTY_LABEL } from '../../data/categories'
 import { useCategories } from '../../hooks/useCategories'
+import { editRecipeHref } from '../../hooks/useHashRoute'
 import { useRecipes } from '../../hooks/useRecipes'
 import { formatDuration, totalMinutes } from '../../lib/time'
 import type { Recipe, RecipeTimes } from '../../types/recipe'
@@ -178,20 +180,30 @@ function RecipeContent({ recipe, onToggleFavorite }: RecipeContentProps) {
           </h1>
           <p className="mt-3 text-cocoa-muted">{recipe.description}</p>
 
-          <motion.button
-            type="button"
-            whileTap={{ scale: 0.96 }}
-            onClick={onToggleFavorite}
-            aria-pressed={recipe.favorite}
-            className={`mt-5 flex w-fit items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
-              recipe.favorite
-                ? 'border-blush-100 bg-blush-50 text-blush-500'
-                : 'border-line text-cocoa-muted hover:border-blush-100 hover:text-cocoa'
-            }`}
-          >
-            <Heart className={`size-4 ${recipe.favorite ? 'fill-blush-500' : ''}`} strokeWidth={1.75} />
-            {recipe.favorite ? 'Nos favoritos' : 'Favoritar'}
-          </motion.button>
+          <div className="mt-5 flex items-center gap-2">
+            <motion.button
+              type="button"
+              whileTap={{ scale: 0.96 }}
+              onClick={onToggleFavorite}
+              aria-pressed={recipe.favorite}
+              className={`flex w-fit items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+                recipe.favorite
+                  ? 'border-blush-100 bg-blush-50 text-blush-500'
+                  : 'border-line text-cocoa-muted hover:border-blush-100 hover:text-cocoa'
+              }`}
+            >
+              <Heart className={`size-4 ${recipe.favorite ? 'fill-blush-500' : ''}`} strokeWidth={1.75} />
+              {recipe.favorite ? 'Nos favoritos' : 'Favoritar'}
+            </motion.button>
+            <a
+              href={editRecipeHref(recipe.id)}
+              aria-label={`Editar ${recipe.title}`}
+              title="Editar"
+              className="grid size-9 place-items-center rounded-full border border-line text-cocoa-muted transition-colors hover:border-blush-100 hover:text-cocoa"
+            >
+              <Pencil className="size-4" strokeWidth={1.75} />
+            </a>
+          </div>
 
           <dl className="mt-8 grid grid-cols-3 border-y border-line py-5">
             <Stat icon={Clock} label="Pronto em" value={formatDuration(totalMinutes(recipe.times))} highlight />

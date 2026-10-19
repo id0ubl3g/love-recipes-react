@@ -2,6 +2,7 @@ import { toast } from 'sonner'
 import { RecipeForm } from '../components/recipe/RecipeForm'
 import { recipeHref } from '../hooks/useHashRoute'
 import { useRecipes } from '../hooks/useRecipes'
+import { recipeSaveError } from '../lib/api'
 import type { RecipeInput } from '../types/recipe'
 
 function leave() {
@@ -14,12 +15,7 @@ export function NewRecipe() {
 
   async function handleSubmit(input: RecipeInput) {
     const recipe = await addRecipe(input).catch((error: unknown) => {
-      console.error(error)
-      // 23514: o banco recusou por passar de algum limite (ver src/lib/limits.ts).
-      if ((error as { code?: string } | null)?.code === '23514') {
-        throw new Error('A receita passou de algum limite de tamanho. Revise os ingredientes e o modo de preparo.')
-      }
-      throw new Error('Não foi possível salvar a receita. Verifique a conexão e tente de novo.')
+      throw recipeSaveError(error)
     })
     window.location.hash = '/receitas'
     toast.success('Receita adicionada!', {
