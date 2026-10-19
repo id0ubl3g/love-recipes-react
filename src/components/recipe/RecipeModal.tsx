@@ -163,16 +163,11 @@ interface RecipeContentProps {
 function RecipeContent({ recipe, onToggleFavorite, onDelete }: RecipeContentProps) {
   const { getCategory } = useCategories()
   const [checked, setChecked] = useState<Set<number>>(new Set())
+  const [doneSteps, setDoneSteps] = useState<Set<number>>(new Set())
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
-  function toggleIngredient(index: number) {
-    setChecked((prev) => {
-      const next = new Set(prev)
-      if (next.has(index)) next.delete(index)
-      else next.add(index)
-      return next
-    })
-  }
+  const toggleIngredient = (index: number) => setChecked((prev) => toggle(prev, index))
+  const toggleStep = (index: number) => setDoneSteps((prev) => toggle(prev, index))
 
   return (
     <article>
@@ -326,7 +321,7 @@ function RecipeContent({ recipe, onToggleFavorite, onDelete }: RecipeContentProp
                       {done && <Check className="size-3.5" strokeWidth={3} />}
                     </span>
                     <span
-                      className={`text-sm transition-colors ${done ? 'text-cocoa-muted/60 line-through' : 'text-cocoa'}`}
+                      className={`text-sm transition-colors ${done ? 'text-cocoa-muted/60' : 'text-cocoa'}`}
                     >
                       {ingredient}
                     </span>
@@ -338,23 +333,58 @@ function RecipeContent({ recipe, onToggleFavorite, onDelete }: RecipeContentProp
         </section>
 
         <section aria-labelledby="preparo-titulo">
-          <h2 id="preparo-titulo" className="font-display text-2xl font-semibold text-cocoa">
-            Modo de preparo
-          </h2>
-          <ol className="mt-4 space-y-5">
-            {recipe.steps.map((step, index) => (
-              <li key={index} className="flex gap-4">
-                <span className="grid size-7 shrink-0 place-items-center rounded-full bg-blush-50 text-xs font-semibold text-blush-500">
-                  {index + 1}
-                </span>
-                <p className="pt-1 text-sm leading-relaxed text-cocoa">{step}</p>
-              </li>
-            ))}
+          <div className="flex items-baseline justify-between">
+            <h2 id="preparo-titulo" className="font-display text-2xl font-semibold text-cocoa">
+              Modo de preparo
+            </h2>
+            <span className="text-xs text-cocoa-muted">
+              {doneSteps.size}/{recipe.steps.length}
+            </span>
+          </div>
+          {/* Tocar num passo marca como feito: o número vira check e o texto fica apagado. */}
+          <ol className="mt-4 space-y-2">
+            {recipe.steps.map((step, index) => {
+              const done = doneSteps.has(index)
+              return (
+                <li key={index}>
+                  <button
+                    type="button"
+                    onClick={() => toggleStep(index)}
+                    aria-pressed={done}
+                    aria-label={`Passo ${index + 1}${done ? ', feito' : ''}: ${step}`}
+                    className="flex w-full gap-4 rounded-xl py-1.5 text-left"
+                  >
+                    <span
+                      className={`grid size-7 shrink-0 place-items-center rounded-full text-xs font-semibold transition-colors ${
+                        done ? 'bg-blush-500 text-white' : 'bg-blush-50 text-blush-500'
+                      }`}
+                    >
+                      {done ? <Check className="size-3.5" strokeWidth={3} /> : index + 1}
+                    </span>
+                    <span
+                      className={`pt-1 text-sm leading-relaxed transition-colors ${
+                        done ? 'text-cocoa-muted/60' : 'text-cocoa'
+                      }`}
+                    >
+                      {step}
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
           </ol>
         </section>
       </div>
     </article>
   )
+}
+
+/** Cópia do conjunto com o índice marcado ou desmarcado. */
+function toggle(set: Set<number>, index: number) {
+  const next = new Set(set)
+  if (next.has(index)) next.delete(index)
+  else next.add(index)
+  return next
 }
 
 interface StatProps {
