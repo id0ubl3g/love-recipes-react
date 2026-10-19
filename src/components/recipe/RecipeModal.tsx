@@ -10,10 +10,11 @@ import {
   Pencil,
   Snowflake,
   Timer,
+  Trash2,
   Users,
   X,
 } from 'lucide-react'
-import { motion } from 'motion/react'
+import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { DIFFICULTY_LABEL } from '../../data/categories'
@@ -40,7 +41,7 @@ const TIME_STEPS: { key: keyof RecipeTimes; label: string; icon: typeof Timer }[
 
 /** Receita completa em tela cheia, por cima do Início. */
 export function RecipeModal({ id, onClose }: RecipeModalProps) {
-  const { recipes, loading, toggleFavorite } = useRecipes()
+  const { recipes, loading, toggleFavorite, removeRecipe } = useRecipes()
   const recipe = recipes.find((r) => r.id === id)
   const closeRef = useRef<HTMLButtonElement>(null)
   const [fullscreen, setFullscreen] = useState(false)
@@ -138,6 +139,13 @@ export function RecipeModal({ id, onClose }: RecipeModalProps) {
                 if (recipe.favorite) toast(`${recipe.title} saiu dos favoritos`)
                 else toast.success(`${recipe.title} foi para os favoritos`)
               }}
+              onDelete={() => {
+                // Fecha antes: a receita some da lista na hora, e o popup mostraria "não encontrada".
+                onClose()
+                removeRecipe(recipe.id)
+                  .then(() => toast.success(`${recipe.title} foi excluída`))
+                  .catch(() => toast.error('Não foi possível excluir a receita. Tente de novo.'))
+              }}
             />
           )}
         </div>
@@ -149,11 +157,13 @@ export function RecipeModal({ id, onClose }: RecipeModalProps) {
 interface RecipeContentProps {
   recipe: Recipe
   onToggleFavorite: () => void
+  onDelete: () => void
 }
 
-function RecipeContent({ recipe, onToggleFavorite }: RecipeContentProps) {
+function RecipeContent({ recipe, onToggleFavorite, onDelete }: RecipeContentProps) {
   const { getCategory } = useCategories()
   const [checked, setChecked] = useState<Set<number>>(new Set())
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   function toggleIngredient(index: number) {
     setChecked((prev) => {
@@ -203,7 +213,50 @@ function RecipeContent({ recipe, onToggleFavorite }: RecipeContentProps) {
             >
               <Pencil className="size-4" strokeWidth={1.75} />
             </a>
+            <button
+              type="button"
+              onClick={() => setConfirmingDelete(true)}
+              aria-label={`Excluir ${recipe.title}`}
+              aria-expanded={confirmingDelete}
+              title="Excluir"
+              className="grid size-9 place-items-center rounded-full border border-line text-cocoa-muted transition-colors hover:border-red-100 hover:bg-red-50 hover:text-red-500"
+            >
+              <Trash2 className="size-4" strokeWidth={1.75} />
+            </button>
           </div>
+
+          <AnimatePresence initial={false}>
+            {confirmingDelete && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div role="alert" className="mt-4 rounded-2xl border border-red-100 bg-red-50/60 p-4">
+                  <p className="text-sm font-semibold text-cocoa">Excluir “{recipe.title}”?</p>
+                  <p className="mt-1 text-sm text-cocoa-muted">A receita e a foto serão apagadas. Não dá para desfazer.</p>
+                  <div className="mt-4 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingDelete(false)}
+                      className="rounded-full px-4 py-2 text-sm font-medium text-cocoa-muted hover:text-cocoa"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onDelete}
+                      className="rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-600"
+                    >
+                      Excluir receita
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <dl className="mt-8 grid grid-cols-3 border-y border-line py-5">
             <Stat icon={Clock} label="Pronto em" value={formatDuration(totalMinutes(recipe.times))} highlight />
